@@ -6,20 +6,40 @@ from scipy.spatial.transform import Rotation as R
 from pads.IntegerPartition import mckay
 
 VoxelType: TypeAlias = tuple[int, int, int]
+from collections import Counter
+from itertools import combinations, product
+
 from blokk_solver.blokks import get_volume_to_ids
 
-from collections import Counter
-from itertools import combinations
 
-def generate_partitions(n: int):
+def generate_partitions(n: int, max_volume=5, flatten=False):
     volume_to_ids = get_volume_to_ids()
     integer_partitions = mckay(n)
     for integer_partition in integer_partitions:
-        volume_to_number_of_pieces = Counter(integer_partition)
-        for volume, number_of_pieces in volume_to_number_of_pieces:
-            for ids in combinations(volume_to_ids[volume], n=number_of_pieces):
-                pass
-        yield integer_partition
+        if max(integer_partition) > max_volume:
+            continue
+
+        n_pieces_by_volume: dict[int, int] = Counter(integer_partition)
+
+        selections = []
+        try:
+            for volume, n_pieces in n_pieces_by_volume.items():
+                ways_to_sample_that_volume = list(
+                    combinations(volume_to_ids[volume], r=n_pieces)
+                )
+                if len(ways_to_sample_that_volume) > 0:
+                    selections.append(ways_to_sample_that_volume)
+        except KeyError:
+            continue
+
+        # generate cartesian product
+        plays = product(*selections)
+        if flatten:
+            for play in plays:
+                yield play
+
+        if not flatten:
+            yield (integer_partition, plays)
 
 
 def all_rotation_matrices() -> list[np.ndarray]:
@@ -143,4 +163,5 @@ def voxels_to_gameboard(voxels: list[VoxelType], n: int = 5, flatten=False):
         board[x, y, z] = 1
     if flatten:
         return board.flatten()
+    return board
     return board
