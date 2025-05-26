@@ -4,7 +4,7 @@ import pandas as pd
 # import polars as pl  # noqa
 
 # thanks copilot :doge:
-blokks = pd.DataFrame(
+_blokks = pd.DataFrame(
     [
         {
             "id": 1,
@@ -261,11 +261,20 @@ blokks = pd.DataFrame(
     ]
 )
 
-blokks["max_length"] = blokks["shape"].apply(
-    lambda points: max([coord for point in points for coord in point]) + 1
-)  # sum on lists is concat
 
-volume_to_ids = blokks.groupby("volume")["id"].agg(set).to_dict()
+def get_blokks():
+    blokks = _blokks.copy()
+    blokks["voxels"] = blokks["shape"].apply(np.array)
+    blokks = blokks.set_index("id")
+    blokks["max_length"] = blokks["shape"].apply(
+        lambda points: max([coord for point in points for coord in point]) + 1
+    )
+    return blokks
+
+
+def get_volume_to_ids():
+    volume_to_ids = _blokks.groupby("volume")["id"].agg(set).to_dict()
+    return volume_to_ids
 
 
 def shape_to_game_board(shape, n, flatten=False):

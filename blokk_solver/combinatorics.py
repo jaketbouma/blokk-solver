@@ -81,7 +81,37 @@ def generate_translations(voxels, n):
                 translated = voxels - min_coords + np.array([dx, dy, dz])
                 if np.all((translated >= 0) & (translated < n)):
                     translations.append(translated.tolist())
-    return translations
+    return np.unique(translations, axis=0)
+
+
+def generate_all_placements(voxels, n=3):
+    """
+    Generate all possible unique placements of a blokk within an n x n x n grid.
+
+    This function computes all unique placements by generating all possible rotations of the input voxels,
+    then translating each rotation within the bounds of the grid. Duplicate placements are removed.
+
+    Args:
+        voxels (np.ndarray): An array representing the coordinates of the voxels to be placed.
+        n (int, optional): The size of the cubic grid along each axis. Defaults to 3.
+
+    Returns:
+        np.ndarray: An array containing all unique placements of the input voxels within the grid.
+
+    Side Effects:
+        Prints the number of generated rotations, total placements, and unique placements.
+    """
+    rotations = generate_rotations(voxels)
+    placements = np.array([voxels])
+    for rotation in rotations:
+        translations = generate_translations(rotation, n=n)
+        if translations.size > 0:
+            placements = np.concatenate([placements, translations], axis=0)
+    unique_placements = np.unique(placements, axis=0)
+    print(
+        f"generated {len(rotations)} rotations = {len(placements)} placements = {len(unique_placements)} unique placements"
+    )
+    return unique_placements
 
 
 def voxels_to_gameboard(voxels: list[ArrayLike], n: int = 5, flatten=False):
