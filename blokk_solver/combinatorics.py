@@ -1,45 +1,78 @@
+import logging
+from collections import Counter
+from itertools import chain, combinations, product
 from typing import TypeAlias
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
+from blokk_solver.blokks import get_volume_to_ids
 from pads.IntegerPartition import mckay
 
+logger = logging.getLogger(__name__)
+
 VoxelType: TypeAlias = tuple[int, int, int]
-from collections import Counter
-from itertools import combinations, product
-
-from blokk_solver.blokks import get_volume_to_ids
 
 
-def generate_partitions(n: int, max_volume=5, flatten=False):
-    volume_to_ids = get_volume_to_ids()
-    integer_partitions = mckay(n)
+def _sample_by_volume(
+    volume: int,
+    n: int,
+    volume_to_ids: dict[int, list[int]],
+) -> set:
+    """
+    Generates a set of all unique samples of n blokks
+    of volume v from the volume_to_ids dict.
+
+    Returns an empty set if no samples can be made.
+    """
+    try:
+        ids = volume_to_ids[volume]
+    except KeyError:
+        return set()
+
+    if len(ids) < n:
+        return set()
+
+    samples = set(combinations(ids, r=n))
+
+    return samples
+
+
+def generate_cube_volume_samples(cube_volume: int, max_volume=5):
+    volume_to_ids = {
+        volume: ids
+        for volume, ids in get_volume_to_ids().items()
+        if volume <= max_volume
+    }
+
+    # loop through integer partitions
+    integer_partitions = mckay(cube_volume)
     for integer_partition in integer_partitions:
-        if max(integer_partition) > max_volume:
-            continue
+        # the number of blokks per blokk volume
+        volume_to_n: dict[int, int] = Counter(integer_partition)
 
-        n_pieces_by_volume: dict[int, int] = Counter(integer_partition)
-
+        # try fill the volume from blokks
         selections = []
-        try:
-            for volume, n_pieces in n_pieces_by_volume.items():
-                ways_to_sample_that_volume = list(
-                    combinations(volume_to_ids[volume], r=n_pieces)
-                )
-                if len(ways_to_sample_that_volume) > 0:
-                    selections.append(ways_to_sample_that_volume)
-        except KeyError:
+        partition_is_possible = True
+        for volume, n in volume_to_n.items():
+            volume_samples = _sample_by_volume(volume, n, volume_to_ids)
+            if len(volume_samples) > 0:
+                selections.append(volume_samples)
+            else:
+                partition_is_possible = False
+                break
+
+        # partition is not possible
+        if not partition_is_possible:
             continue
 
-        # generate cartesian product
+        # generate cartesian product of all the ways
+        # to fill each factor of the partition
         plays = product(*selections)
-        if flatten:
-            for play in plays:
-                yield play
-
-        if not flatten:
-            yield (integer_partition, plays)
+        for play in plays:
+            # flatten from [[(ids with vol1), (ids with vol2), ...], ...]
+            # to [[ids], ...]
+            yield frozenset(chain.from_iterable(play))
 
 
 def all_rotation_matrices() -> list[np.ndarray]:
