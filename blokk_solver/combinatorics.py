@@ -20,9 +20,7 @@ def _sample_by_volume(
     volume_to_ids: dict[int, list[int]],
 ) -> set:
     """
-    Generates a set of all unique samples of n blokks
-    of volume v from the volume_to_ids dict.
-
+    Return all unique samples of n blokks of the given volume from volume_to_ids.
     Returns an empty set if no samples can be made.
     """
     try:
@@ -39,6 +37,10 @@ def _sample_by_volume(
 
 
 def generate_cube_volume_samples(cube_volume: int, max_volume=5):
+    """
+    Yield all unique sets of blokk IDs whose volumes sum to cube_volume,
+    using only blokks with volume <= max_volume.
+    """
     volume_to_ids = {
         volume: ids
         for volume, ids in get_volume_to_ids().items()
@@ -77,10 +79,8 @@ def generate_cube_volume_samples(cube_volume: int, max_volume=5):
 
 def all_rotation_matrices() -> list[np.ndarray]:
     """
-    Generate all 24 proper rotation matrices of the cube (the octahedral group, no reflections).
-
-    Returns:
-        List[np.ndarray]: A list of 3x3 numpy arrays, each representing a rotation matrix (dtype=int).
+    Return all 24 proper rotation matrices of the cube (octahedral group, no reflections).
+    Each matrix is a 3x3 numpy array of dtype int.
     """
     rots = R.create_group("O")
     # Ensure all matrices are integer-valued
@@ -89,13 +89,7 @@ def all_rotation_matrices() -> list[np.ndarray]:
 
 def normalize_shape(voxels: frozenset[VoxelType]) -> frozenset[VoxelType]:
     """
-    Normalize a set of 3D coordinates so that the minimum value along each axis is zero.
-
-    Args:
-        voxels (list of tuples): List of (x, y, z) coordinates.
-
-    Returns:
-        List[Tuple[int, int, int]]: Normalized coordinates as a list of tuples.
+    Normalize a set of 3D coordinates so the minimum value along each axis is zero.
     """
     xs, ys, zs = zip(*voxels)
     min_x, min_y, min_z = min(xs), min(ys), min(zs)
@@ -106,13 +100,7 @@ def generate_rotations(
     voxels: frozenset[VoxelType],
 ) -> set[frozenset[VoxelType]]:
     """
-    Generates all unique rotations of a blokk (represented by a set of 3D voxels).
-
-    Args:
-        voxels (list): A list of 3D coordinates representing the voxels of the blokk.
-
-    Returns:
-        List[List[Tuple[int, int, int]]]: List of unique voxel coordinate lists, each corresponding to a rotation.
+    Return all unique rotations of a blokk, represented by a set of 3D voxels.
     """
     # use numpy for rotation
     voxels_matrix = np.array(sorted(voxels), dtype=int)
@@ -134,8 +122,7 @@ def generate_translations(
     n: int,
 ) -> set[frozenset[VoxelType]]:
     """
-    Generate all unique translations of the blokk shape defined by voxels, within the nxnxn game board.
-    Returns a list of translated shapes (each as a list of (x, y, z) tuples).
+    Return all unique translations of the blokk shape within an n x n x n board.
     """
     voxels_array = np.array(list(voxels), dtype=int)
     min_coords = voxels_array.min(axis=0)
@@ -157,17 +144,8 @@ def generate_all_placements(
     voxels: frozenset[VoxelType], n=3
 ) -> set[frozenset[VoxelType]]:
     """
-    Generate all possible unique placements of a blokk within an n x n x n grid.
-
-    This function computes all unique placements by generating all possible rotations of the input voxels,
-    then translating each rotation within the bounds of the grid. Duplicate placements are removed.
-
-    Args:
-        voxels (list of tuples): The coordinates of the voxels to be placed.
-        n (int, optional): The size of the cubic grid along each axis. Defaults to 3.
-
-    Returns:
-        List[List[Tuple[int, int, int]]]: All unique placements of the input voxels within the grid.
+    Return all unique placements of a blokk within an n x n x n grid,
+    considering all rotations and translations.
     """
     rotations = generate_rotations(voxels)
     placements = set()
@@ -181,15 +159,8 @@ def generate_all_placements(
 
 def voxels_to_gameboard(voxels: list[VoxelType], n: int = 5, flatten=False):
     """
-    Converts a list of voxel coordinates into a 3D gameboard array.
-
-    Args:
-        voxels (list of tuples): List of (x, y, z) coordinates.
-        n (int, optional): Size of the gameboard along each dimension (creates an n x n x n grid). Defaults to 5.
-        flatten (bool, optional): If True, returns the gameboard as a flattened 1D array of length n*n*n. Defaults to False.
-
-    Returns:
-        np.ndarray: An n x n x n numpy array (or a flattened 1D array if `flatten` is True) with 1s at the specified voxel positions and 0s elsewhere.
+    Convert a list of voxel coordinates into a 3D gameboard array of shape (n, n, n).
+    If flatten is True, return a 1D array of length n*n*n.
     """
     board = np.zeros((n, n, n), dtype=int)
     for x, y, z in voxels:
