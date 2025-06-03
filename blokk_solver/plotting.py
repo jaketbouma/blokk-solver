@@ -1,5 +1,23 @@
+from typing import TypeAlias
+
+import numpy as np
 import plotly.graph_objects as go
 from numpy.typing import ArrayLike
+
+VoxelType: TypeAlias = tuple[int, int, int]
+
+
+def voxels_to_gameboard(voxels: list[VoxelType], n: int = 5, flatten=False):
+    """
+    Convert a list of voxel coordinates into a 3D gameboard array of shape (n, n, n).
+    If flatten is True, return a 1D array of length n*n*n.
+    """
+    board = np.zeros((n, n, n), dtype=int)
+    for x, y, z in voxels:
+        board[x, y, z] = 1
+    if flatten:
+        return board.flatten()
+    return board
 
 
 def plot_voxels(
@@ -108,4 +126,6 @@ def plot_voxels(
         ),
         margin=dict(l=0, r=0, b=0, t=0),
     )
+    return fig
+    return fig
     return fig
