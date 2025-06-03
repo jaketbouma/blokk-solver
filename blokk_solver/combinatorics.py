@@ -14,6 +14,16 @@ logger = logging.getLogger(__name__)
 VoxelType: TypeAlias = tuple[int, int, int]
 
 
+def solve(cube_size, blokks: frozenset[frozenset[VoxelType]]):
+    all_blokk_placements: list[set[frozenset[VoxelType]]] = [
+        generate_all_placements(blokk, cube_size) for blokk in blokks
+    ]
+    all_build_attempts = product(*all_blokk_placements)
+    for build in all_build_attempts:
+        logger.debug(build)
+        break
+
+
 def _sample_by_volume(
     volume: int,
     n: int,
@@ -36,7 +46,7 @@ def _sample_by_volume(
     return samples
 
 
-def generate_cube_volume_samples(cube_volume: int, max_volume=5):
+def generate_cube_volume_samples(cube_volume: int, max_volume=5) -> frozenset[int]:
     """
     Yield all unique sets of blokk IDs whose volumes sum to cube_volume,
     using only blokks with volume <= max_volume.
@@ -73,7 +83,7 @@ def generate_cube_volume_samples(cube_volume: int, max_volume=5):
         plays = product(*selections)
         for play in plays:
             # flatten from [[(ids with vol1), (ids with vol2), ...], ...]
-            # to [[ids], ...]
+            # to [ids, ...]
             yield frozenset(chain.from_iterable(play))
 
 
@@ -119,10 +129,10 @@ def generate_rotations(
 
 def generate_translations(
     voxels: frozenset[VoxelType],
-    n: int,
+    cube_size: int,
 ) -> set[frozenset[VoxelType]]:
     """
-    Return all unique translations of the blokk shape within an n x n x n board.
+    Return all unique translations of the blokk shape within a cube_size x cube_size x cube_size board.
     """
     voxels_array = np.array(list(voxels), dtype=int)
     min_coords = voxels_array.min(axis=0)
@@ -130,42 +140,28 @@ def generate_translations(
     shape_size = max_coords - min_coords + 1
 
     translations = set()
-    for dx in range(n - shape_size[0] + 1):
-        for dy in range(n - shape_size[1] + 1):
-            for dz in range(n - shape_size[2] + 1):
+    for dx in range(cube_size - shape_size[0] + 1):
+        for dy in range(cube_size - shape_size[1] + 1):
+            for dz in range(cube_size - shape_size[2] + 1):
                 offset = np.array([dx, dy, dz]) - min_coords
                 translated = voxels_array + offset
-                if np.all((0 <= translated) & (translated < n)):
+                if np.all((0 <= translated) & (translated < cube_size)):
                     translations.add(frozenset(map(tuple, translated)))
     return translations
 
 
 def generate_all_placements(
-    voxels: frozenset[VoxelType], n=3
+    voxels: frozenset[VoxelType], cube_size=3
 ) -> set[frozenset[VoxelType]]:
     """
-    Return all unique placements of a blokk within an n x n x n grid,
+    Return all unique placements of a blokk within a cube_size x cube_size x cube_size grid,
     considering all rotations and translations.
     """
     rotations = generate_rotations(voxels)
     placements = set()
     for rotation in rotations:
-        translations = generate_translations(rotation, n=n)
+        translations = generate_translations(rotation, cube_size=cube_size)
         placements.update(translations)
     # Remove duplicates
     print(f"generated {len(rotations)} rotations = {len(placements)} unique placements")
     return placements
-
-
-def voxels_to_gameboard(voxels: list[VoxelType], n: int = 5, flatten=False):
-    """
-    Convert a list of voxel coordinates into a 3D gameboard array of shape (n, n, n).
-    If flatten is True, return a 1D array of length n*n*n.
-    """
-    board = np.zeros((n, n, n), dtype=int)
-    for x, y, z in voxels:
-        board[x, y, z] = 1
-    if flatten:
-        return board.flatten()
-    return board
-    return board
