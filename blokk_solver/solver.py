@@ -3,11 +3,13 @@ import logging
 from itertools import product
 from typing import Optional
 
+from joblib import Memory
+
 from blokk_solver.blokks import get_blokks
 from blokk_solver.combinatorics import (
     VoxelType,
+    generate_all_blokk_samples,  # updated import
     generate_all_placements,
-    generate_cube_volume_samples,
 )
 
 logger = logging.getLogger(__name__)
@@ -16,19 +18,44 @@ logger = logging.getLogger(__name__)
 blokk_data = get_blokks()
 
 
+location = "joblib-cache"
+memory = Memory(location, verbose=0)
+
+
+@memory.cache()
+def cached_partitions(cube_volume, max_volume):
+    yield generate_all_blokk_samples(cube_volume=cube_volume, max_volume=max_volume)
+
+
+@memory.cache()
+def cached_solutions(cube_volume, max_volume):
+    solutions = []
+    for blokk_ids in generate_all_blokk_samples(
+        cube_volume=cube_volume,
+        max_volume=max_volume,
+    ):
+        winning_build = solve(blokk_ids=blokk_ids)
+        if winning_build is not None:
+            solutions.append([{"ids": blokk_ids, "build": winning_build}])
+    if len(solutions) == 0:
+        return None
+    return solutions
+
+
 def solve_all_now(cube_volume, max_volume=5):
     solutions = []
-    for blokk_ids in generate_cube_volume_samples(
-        cube_volume=cube_volume, max_volume=max_volume
+    for integer_partition_number, blokk_ids in generate_all_blokk_samples(
+        cube_volume=cube_volume,
+        max_volume=max_volume,  # updated call
     ):
-        first_winning_build = solve(cube_size=cube_volume, blokk_ids=blokk_ids) or []
+        first_winning_build = solve(blokk_ids=blokk_ids) or []
         solutions.append(
             [{"ids": blokk_ids, "first_winning_build": first_winning_build}]
         )
     return solutions
 
 
-def solve(cube_size, blokk_ids: set[int]) -> Optional[set[frozenset[VoxelType]]]:
+def solve(blokk_ids: set[int]) -> Optional[set[frozenset[VoxelType]]]:
     blokk_voxels: list[frozenset[VoxelType]] = blokk_data.loc[
         list(blokk_ids), "voxels"
     ].tolist()
