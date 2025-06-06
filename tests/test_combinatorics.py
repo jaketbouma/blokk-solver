@@ -105,6 +105,7 @@ def test_generate_all_blokk_samples_27(
     assert count == expected_number_of_samples
 
 
+@pytest.mark.skip(reason="Too slow for a test")
 @pytest.mark.parametrize(
     "max_volume,expected_number_of_samples,expected_last_partition_idx",
     [

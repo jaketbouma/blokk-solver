@@ -4,7 +4,6 @@ from itertools import chain, combinations, product
 from typing import Generator, TypeAlias
 
 import numpy as np
-from joblib import Memory
 from scipy.spatial.transform import Rotation as R
 
 from blokk_solver.blokks import get_volume_to_ids
@@ -13,10 +12,6 @@ from pads.IntegerPartition import mckay
 logger = logging.getLogger(__name__)
 
 VoxelType: TypeAlias = tuple[int, int, int]
-
-
-location = "cache/combinatorics"
-memory = Memory(location, verbose=0)
 
 
 def generate_blokk_samples_from_integer_partition(
@@ -44,7 +39,6 @@ def generate_blokk_samples_from_integer_partition(
         yield frozenset(chain.from_iterable(play))
 
 
-@memory()
 def generate_all_blokk_samples(
     cube_volume: int, max_volume=5
 ) -> Generator[tuple[int, frozenset[int]]]:
@@ -63,7 +57,6 @@ def generate_all_blokk_samples(
                 yield (idx, blokk_sample)
 
 
-@memory()
 def all_rotation_matrices() -> list[np.ndarray]:
     """
     Return all 24 proper rotation matrices of the cube (octahedral group, no reflections).
@@ -83,7 +76,6 @@ def normalize_shape(voxels: frozenset[VoxelType]) -> frozenset[VoxelType]:
     return frozenset([(x - min_x, y - min_y, z - min_z) for (x, y, z) in voxels])
 
 
-@memory()
 def generate_rotations(
     voxels: frozenset[VoxelType],
 ) -> set[frozenset[VoxelType]]:
@@ -98,14 +90,13 @@ def generate_rotations(
     for rotation_matrix in rotations:
         rotated_voxels_matrix = np.dot(voxels_matrix, rotation_matrix.T)
         rotated_voxels = frozenset(
-            [frozenset(voxel_as_array) for voxel_as_array in rotated_voxels_matrix]
+            [tuple(voxel_as_array) for voxel_as_array in rotated_voxels_matrix]
         )
         normalized_voxels = normalize_shape(rotated_voxels)
         blokk_rotations.add(frozenset(normalized_voxels))
     return blokk_rotations
 
 
-@memory()
 def generate_translations(
     voxels: frozenset[VoxelType],
     cube_size: int,
@@ -129,7 +120,6 @@ def generate_translations(
     return translations
 
 
-@memory()
 def generate_all_placements(
     voxels: frozenset[VoxelType], cube_size=3
 ) -> set[frozenset[VoxelType]]:

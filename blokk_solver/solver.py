@@ -11,6 +11,8 @@ from blokk_solver.combinatorics import (
     generate_all_blokk_samples,  # updated import
     generate_all_placements,
 )
+from joblib import Parallel
+import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +24,11 @@ location = "joblib-cache"
 memory = Memory(location, verbose=0)
 
 
-@memory.cache()
-def cached_partitions(cube_volume, max_volume):
-    yield generate_all_blokk_samples(cube_volume=cube_volume, max_volume=max_volume)
+#@memory.cache()
+def cached_all_blokk_samples(cube_volume, max_volume):
+    gen = tqdm(generate_all_blokk_samples(cube_volume=cube_volume, max_volume=max_volume))
+    p = Parallel(n_jobs=2)(integer_partition_idx, blokk_ids for integer_partition_idx, blokk_ids in (gen))
+    return p
 
 
 @memory.cache()
