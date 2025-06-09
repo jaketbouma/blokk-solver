@@ -3,8 +3,8 @@ import pytest  # noqa
 
 from blokk_solver.blokks import get_blokks
 from blokk_solver.combinatorics import (
+    generate_all_blokk_samples,  # renamed import
     generate_all_placements,
-    generate_cube_volume_samples,
     generate_rotations,
 )
 
@@ -74,22 +74,57 @@ def test_blokk_12_placements(blokks, n, expected_placements):
         (4, [{4, 1}, {3, 1}, {5}, {6}, {7}, {8}, {9}, {10}, {11}]),
     ],
 )
-def test_trivial_cube_volume_samples(volume, expected_samples):
-    samples = list(generate_cube_volume_samples(volume))
+def test_trivial_all_blokk_samples(volume, expected_samples):
+    samples = [s for _, s in generate_all_blokk_samples(volume)]
     expected_samples = set([frozenset(x) for x in expected_samples])
     assert set(samples) == expected_samples
     assert len(samples) == len(expected_samples)
 
 
 @pytest.mark.parametrize(
-    "n,expected_counts",
+    "max_volume,expected_number_of_samples,expected_last_partition_idx",
     [
-        (2, 0),
-        (3, 0),
-        (4, 42),  # not confirmed
-        (5, 565622),  # not confirmed
+        (2, 0, -1),
+        (3, 0, -1),
+        (4, 42, 2788),  # not confirmed
+        (5, 565622, 2788),  # not confirmed
     ],
 )
-def test_generate_cube_volume_samples_27(blokks, n, expected_counts):
-    p = list(generate_cube_volume_samples(27, max_volume=n))
-    assert len(p) == expected_counts
+def test_generate_all_blokk_samples_27(
+    blokks,
+    max_volume,
+    expected_number_of_samples,
+    expected_last_partition_idx,
+):
+    count = 0
+    last_partition_idx = -1
+    for partition_idx, samples in generate_all_blokk_samples(27, max_volume=max_volume):
+        count += 1
+        last_partition_idx = partition_idx
+    assert last_partition_idx == expected_last_partition_idx
+    assert count == expected_number_of_samples
+
+
+@pytest.mark.skip(reason="Too slow for a test")
+@pytest.mark.parametrize(
+    "max_volume,expected_number_of_samples,expected_last_partition_idx",
+    [
+        (2, 0, -1),
+        (3, 0, -1),
+        (4, 42, 2788),  # not confirmed
+        # (5, 565622, 2788),  # not confirmed
+    ],
+)
+def test_generate_all_blokk_samples_64(
+    blokks,
+    max_volume,
+    expected_number_of_samples,
+    expected_last_partition_idx,
+):
+    count = 0
+    last_partition_idx = -1
+    for partition_idx, samples in generate_all_blokk_samples(64, max_volume=max_volume):
+        count += 1
+        last_partition_idx = partition_idx
+    assert last_partition_idx == expected_last_partition_idx
+    assert count == expected_number_of_samples

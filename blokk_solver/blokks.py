@@ -272,8 +272,13 @@ def get_blokks():
     return blokks
 
 
-def get_volume_to_ids():
-    volume_to_ids = _blokks.groupby("volume")["id"].agg(set).to_dict()
+def get_volume_to_ids(max_volume=5):
+    volume_to_ids = (
+        _blokks[_blokks["volume"] <= max_volume]
+        .groupby("volume")["id"]
+        .agg(set)
+        .to_dict()
+    )
     return volume_to_ids
 
 
