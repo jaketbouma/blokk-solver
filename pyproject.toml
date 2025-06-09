@@ -14,11 +14,10 @@ dependencies = [
     "scipy (>=1.15.3,<2.0.0)",
     "matplotlib (>=3.10.3,<4.0.0)",
     "pytest (>=8.3.5,<9.0.0)",
-    "upstash-redis (>=1.4.0,<2.0.0)",
     "joblib (>=1.5.1,<2.0.0)",
     "tqdm (>=4.67.1,<5.0.0)",
-    "pyarrow (>=20.0.0,<21.0.0)",
     "duckdb (>=1.3.0,<2.0.0)",
+    "poethepoet (>=0.34.0,<0.35.0)",
 ]
 
 
@@ -29,4 +28,12 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
 jupyter = "^1.1.1"
+
+[tool.poe.tasks.save-blokk-samples]
+script = "scripts.results_database:stream_blokk_samples_to_duckdb(cube_size=int(cube_size), max_volume=int(max_volume))"
+help = "1️⃣ Generate blokk samples and save to duckdb"
+args = [
+    { name = "cube_size", default = 2, help = "Length of one side of a cube (default: 2)" },
+    { name = "max_volume", default = 4, help = "Restrict the blokks to sample from to max_volume (default: 4)" }
+]
 
