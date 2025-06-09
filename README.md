@@ -8,13 +8,15 @@
 | - Determine all solutions to the game<br>- Develop an API for set(pieces) -> set(solutions) | - UX with a 3D viewer of solutions<br>- An AI player (RL?) |
 
 ### Algorithm 1.0
-Given a large set of game `blokks` that may be used to build a cube of dimension `cube_size` with perfect volume `cube_size**3`.
+**Goal:** Find all subsets of the game pieces that can be assembled into a perfect cube of dimension `cube_size` with volume `cube_size**3`.
 
-Prep. Build the following data structures
-1. Generate all the subsets of `blokks` that have a combined voxel volume equal to the perfect volume. Base the solution on integer partitions. This is a sequential generation that doesn't parallelize well, so save these subsets to disk. They can then be used to parallelize and track/resume progress.
-1. Generate all possible rotations and translations of the blokk within the cube. Cache these.
+The first algorithm is based on the [Integer Partition](https://en.wikipedia.org/wiki/Integer_partition) problem, scanning through and testing subsets of game pieces based on their volume.
 
-Parallel processing of each subset:
+#### Prep -- build the following data structures
+1. Generate all the subsets of `blokks` that have a combined voxel volume equal to the perfect volume `cube_size**3`. This is analogous to the integer partition problem, which is solved with sequential generation, and doesn't parallelize well, so we save these subsets to disk. The saved partitions can then be parallelized and track/resume progress.
+2. Separately generate all possible rotations and translations of the blokk within the cube. Cache these.
+
+#### Parallel processing of each subset:
 1. Iterate through the cartesian product of all possible rotations and translations of each blokk in the subset
    1. Add the blokks together.
    2. If no voxels overlap, then this subset is a solution!
@@ -28,8 +30,12 @@ Prerequisites;
 * Optionally, duckdb cli
 
 1. Install with `poetry install`
-2. Build the samples `poetry run poe save-blokk-samples`
-3. ...
+2. Run tests with `poetry run pytest`
+3. Check the available commands with `poetry run poe`
+4. Generate and write blokk samples to duckdb `poetry run poe save-blokk-samples`
+4. Generate and write blokk rotations and translations to duckdb `poetry run poe save-blokk-positions` (coming soon)
+5. Optionally, inspect and analyze the results with the duckdb ui `duckdb -ui blokk.duckdb`
+6. ... and more to follow
 
 ---
 [Kickstarter](https://www.kickstarter.com/projects/blokkgames/blokk-dare-to-be-square) | [Instagram](https://www.instagram.com/blokk.games) | [Get in touch to contribute](mailto:jake@honestgrowth.no)
