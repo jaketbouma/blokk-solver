@@ -5,7 +5,7 @@ import duckdb
 import polars as pl
 from tqdm import tqdm
 
-from blokk_solver.combinatorics import generate_all_blokk_samples
+from blokk_solver.combinatorics import BlokkCombinatorics
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.DEBUG)
 def stream_blokk_samples_to_duckdb(
     database="blokk.duckdb",
     cube_size=2,
-    max_volume=5,
+    max_blokk_volume=5,
     database_schema=None,
     restart=True,
     loglevel="INFO",
@@ -23,22 +23,24 @@ def stream_blokk_samples_to_duckdb(
 
     if database_schema is None:
         database_schema = f"cube_{cube_size}"
-    table_name = f"{database_schema}.samples_{max_volume}"
-    sequence_name = f"{database_schema}.sq_samples_{max_volume}"
+    table_name = f"{database_schema}.samples_{max_blokk_volume}"
+    sequence_name = f"{database_schema}.sq_samples_{max_blokk_volume}"
 
     logger.info(
         "\n==== stream_blokk_samples_to_duckdb ==============\n"
         f"database        : {database}\n"
         f"cube_size       : {cube_size}\n"
-        f"max_volume      : {max_volume}\n"
+        f"max_blokk_volume: {max_blokk_volume}\n"
         f"table_name      : {table_name}\n"
         f"restart         : {restart}\n"
         "===================================================="
     )
 
-    sample_generator = generate_all_blokk_samples(
-        cube_volume=cube_size**3, max_volume=5
+    # Use the new BlokkCombinatorics API
+    combinatorics = BlokkCombinatorics(
+        max_blokk_volume=max_blokk_volume, cube_size=cube_size
     )
+    sample_generator = combinatorics.generate_all_blokk_samples()
 
     con = duckdb.connect(database=database, read_only=False)
 
@@ -106,4 +108,4 @@ def stream_blokk_samples_to_duckdb(
 
 
 if __name__ == "__main__":
-    stream_blokk_samples_to_duckdb(loglevel="DEBUG")
+    stream_blokk_samples_to_duckdb(loglevel="DEBUG", restart=False)

@@ -1,288 +1,60 @@
-import numpy as np
-import pandas as pd
+from collections import defaultdict
+from dataclasses import dataclass
+from typing import FrozenSet, Iterable, Optional
 
-# import polars as pl  # noqa
+import numpy as np
+
+from blokk_solver._blokk_data import blokk_data
+from blokk_solver.geometry import VoxelType, generate_all_placements
 
 # thanks copilot :doge:
-_blokks = pd.DataFrame(
-    [
-        {
-            "id": 1,
-            "name": "Block 01",
-            "color": "rgb(239, 139, 27)",
-            "volume": 1,
-            "shape": [(0, 0, 0)],
-        },
-        {
-            "id": 2,
-            "name": "Block 02",
-            "color": "rgb(106, 194, 84)",
-            "volume": 2,
-            "shape": [(0, 0, 0), (1, 0, 0)],
-        },
-        {
-            "id": 3,
-            "name": "Block 03",
-            "color": "rgb(244, 195, 203)",
-            "volume": 3,
-            "shape": [(0, 0, 0), (1, 0, 0), (2, 0, 0)],
-        },
-        {
-            "id": 4,
-            "name": "Block 04",
-            "color": "rgb(252, 221, 80)",
-            "volume": 3,
-            "shape": [(0, 0, 0), (0, 1, 0), (0, 2, 0)],
-        },
-        {
-            "id": 5,
-            "name": "Block 05",
-            "color": "purple-blue",
-            "volume": 4,
-            "shape": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (2, 1, 0)],
-        },
-        {
-            "id": 6,
-            "name": "Block 06",
-            "color": "rgb(239, 139, 27)",
-            "volume": 4,
-            "shape": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 2, 0)],
-        },
-        {
-            "id": 7,
-            "name": "Block 07",
-            "color": "rgb(239, 139, 27)",
-            "volume": 4,
-            "shape": [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 2, 0)],
-        },
-        {
-            "id": 8,
-            "name": "Block 08",
-            "color": "rgb(239, 139, 27)",
-            "volume": 4,
-            "shape": [(0, 0, 0), (0, 1, 0), (0, 2, 0), (1, 0, 0)],
-        },
-        {
-            "id": 9,
-            "name": "Block 09",
-            "color": "rgb(252, 221, 80)",
-            "volume": 4,
-            "shape": [(0, 0, 0), (1, 0, 0), (2, 0, 0), (2, 1, 0)],
-        },
-        {
-            "id": 10,
-            "name": "Block 10",
-            "color": "rgb(244, 195, 203)",
-            "volume": 4,
-            "shape": [(0, 0, 0), (0, 1, 0), (0, 2, 0), (1, 2, 0)],
-        },
-        {
-            "id": 11,
-            "name": "Block 11",
-            "color": "rgb(239, 139, 27)",
-            "volume": 4,
-            "shape": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (2, 0, 0)],
-        },
-        {
-            "id": 12,
-            "name": "Block 12",
-            "color": "rgb(106, 194, 84)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (2, 0, 0), (2, 1, 0), (2, 2, 0)],
-        },
-        {
-            "id": 13,
-            "name": "Block 13",
-            "color": "rgb(252, 221, 80)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (2, 0, 0), (2, 1, 0), (3, 1, 0)],
-        },
-        {
-            "id": 14,
-            "name": "Block 14",
-            "color": "rgb(239, 139, 27)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (2, 0, 0), (1, 1, 0), (2, 1, 0)],
-        },
-        {
-            "id": 15,
-            "name": "Block 15",
-            "color": "rgb(252, 221, 80)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 2, 0), (2, 2, 0)],
-        },
-        {
-            "id": 16,
-            "name": "Block 16",
-            "color": "rgb(106, 194, 84)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 2, 0), (2, 2, 0)],
-        },
-        {
-            "id": 17,
-            "name": "Block 17",
-            "color": "rgb(106, 194, 84)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (0, 2, 0), (1, 2, 0), (2, 2, 0)],
-        },
-        {
-            "id": 18,
-            "name": "Block 18",
-            "color": "rgb(244, 195, 203)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (0, 2, 0), (1, 1, 0), (2, 1, 0)],
-        },
-        {
-            "id": 19,
-            "name": "Block 19",
-            "color": "rgb(244, 195, 203)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (0, 2, 0), (1, 0, 0), (2, 0, 0)],
-        },
-        {
-            "id": 20,
-            "name": "Block 20",
-            "color": "rgb(106, 194, 84)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 2, 0), (2, 2, 0)],
-        },
-        {
-            "id": 21,
-            "name": "Block 21",
-            "color": "rgb(106, 194, 84)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (2, 0, 0), (2, 1, 0), (2, 2, 0)],
-        },
-        {
-            "id": 22,
-            "name": "Block 22",
-            "color": "rgb(252, 221, 80)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 2, 0), (2, 2, 0)],
-        },
-        {
-            "id": 23,
-            "name": "Block 23",
-            "color": "rgb(239, 139, 27)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (2, 0, 0), (1, 1, 0), (1, 2, 0)],
-        },
-        {
-            "id": 24,
-            "name": "Block 24",
-            "color": "rgb(252, 221, 80)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (0, 2, 0), (1, 1, 0), (2, 1, 0)],
-        },
-        {
-            "id": 25,
-            "name": "Block 25",
-            "color": "rgb(244, 195, 203)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (1, 2, 0), (2, 2, 0)],
-        },
-        {
-            "id": 26,
-            "name": "Block 26",
-            "color": "rgb(244, 195, 203)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (1, 1, 0), (2, 1, 0), (2, 2, 0)],
-        },
-        {
-            "id": 27,
-            "name": "Block 27",
-            "color": "rgb(87, 194, 230)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (2, 0, 0), (2, 1, 0), (3, 1, 0)],
-        },
-        {
-            "id": 28,
-            "name": "Block 28",
-            "color": "rgb(167, 99, 137)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (1, 1, 0), (2, 1, 0), (2, 2, 0)],
-        },
-        {
-            "id": 29,
-            "name": "Block 29",
-            "color": "rgb(87, 194, 230)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (2, 1, 0), (2, 2, 0)],
-        },
-        {
-            "id": 30,
-            "name": "Block 30",
-            "color": "rgb(167, 99, 137)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (2, 0, 0), (1, 1, 0), (2, 1, 0)],
-        },
-        {
-            "id": 31,
-            "name": "Block 31",
-            "color": "rgb(87, 194, 230)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 2, 0), (2, 2, 0)],
-        },
-        {
-            "id": 32,
-            "name": "Block 32",
-            "color": "rgb(167, 99, 137)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (2, 1, 0), (2, 2, 0)],
-        },
-        {
-            "id": 33,
-            "name": "Block 33",
-            "color": "rgb(87, 194, 230)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (2, 0, 0), (2, 1, 0), (2, 2, 0)],
-        },
-        {
-            "id": 34,
-            "name": "Block 34",
-            "color": "rgb(167, 99, 137)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (2, 1, 0), (2, 2, 0)],
-        },
-        {
-            "id": 35,
-            "name": "Block 35",
-            "color": "rgb(87, 194, 230)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (1, 1, 0), (2, 1, 0), (2, 2, 0)],
-        },
-        {
-            "id": 36,
-            "name": "Block 36",
-            "color": "rgb(167, 99, 137)",
-            "volume": 5,
-            "shape": [(0, 0, 0), (0, 1, 0), (0, 2, 0), (1, 2, 0), (2, 2, 0)],
-        },
-    ]
-)
 
 
-def get_blokks():
-    blokks = _blokks.copy()
-    blokks["voxels"] = blokks["shape"].apply(frozenset)
-    blokks = blokks.set_index("id")
-    blokks["max_length"] = blokks["shape"].apply(
-        lambda points: max([coord for point in points for coord in point]) + 1
-    )
-    return blokks
+@dataclass
+class Blokk:
+    id: int
+    name: str
+    color: str
+    volume: int
+    voxels: FrozenSet[VoxelType]
+    max_length: int = 0
+
+    def __post_init__(self):
+        self.max_length = max([coord for point in self.voxels for coord in point]) + 1
 
 
-def get_volume_to_ids(max_volume=5):
-    volume_to_ids = (
-        _blokks[_blokks["volume"] <= max_volume]
-        .groupby("volume")["id"]
-        .agg(set)
-        .to_dict()
-    )
+def get_blokks(ids: Optional[Iterable[int]] = None) -> list[Blokk]:
+    all_blokks = [Blokk(**data) for data in blokk_data]
+    if ids is not None:
+        ids_set = set(ids)
+        return [b for b in all_blokks if b.id in ids_set]
+    return all_blokks
+
+
+def get_volume_to_ids(
+    cube_size: Optional[int] = None, max_blokk_volume=None
+) -> dict[int, set[int]]:
+    volume_to_ids = defaultdict(set)
+    for blokk in get_blokks():
+        if cube_size is not None and blokk.max_length > cube_size:
+            continue
+        if max_blokk_volume is not None and blokk.volume > max_blokk_volume:
+            continue
+        volume_to_ids[blokk.volume].add(blokk.id)
     return volume_to_ids
 
 
-def shape_to_game_board(shape, n, flatten=False):
+def get_id_to_placements(cube_size=5) -> dict[int, set[frozenset[VoxelType]]]:
+    id_to_placements = {}
+    for blokk in get_blokks():
+        placements = generate_all_placements(blokk.voxels, cube_size=cube_size)
+        id_to_placements[blokk.id] = placements
+    return id_to_placements
+
+
+def shape_to_game_board(
+    shape: FrozenSet[VoxelType], n: int, flatten: bool = False
+) -> np.ndarray:
     """
     shape: list of coordinates (each coordinate is a tuple of 3 ints)
     n: size of the nxnxn game grid
