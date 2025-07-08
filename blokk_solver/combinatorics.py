@@ -1,18 +1,19 @@
 import logging
 from collections import Counter
 from itertools import chain, combinations, product
-from typing import Generator
+from typing import Generator, Optional, Tuple
 
 import enlighten
 
 from blokk_solver._blokk_data import p_n_by_cube
 from blokk_solver.blokks import get_volume_to_ids
-from pads.IntegerPartition import mckay
 
 logger = logging.getLogger(__name__)
 
 
-def accel_asc(n, m):
+def accel_asc(
+    n: int, m: Optional[int] = None
+) -> Generator[Tuple[int, list[int]], None, None]:
     """grabbed this one;
     https://jeromekelleher.net/tag/integer-partitions.html
 
@@ -23,7 +24,7 @@ def accel_asc(n, m):
     a = [0 for i in range(n + 1)]
     k = 1
     y = n - 1
-    idx = 0
+    idx = 0  # integer partition index
     while k != 0:
         x = a[k - 1] + 1
         k -= 1
@@ -36,7 +37,7 @@ def accel_asc(n, m):
             a[k] = x
             a[l] = y
             idx += 1
-            if a[k] <= m:  # patched in
+            if m is None or a[k] <= m:  # patched in
                 yield idx, a[: k + 2]
             x += 1
             y -= 1
@@ -44,7 +45,7 @@ def accel_asc(n, m):
         y = x + y - 1
 
         idx += 1
-        if a[k] <= m:  # patched in
+        if m is None or a[k] <= m:  # patched in
             yield idx, a[: k + 1]
 
 
@@ -83,25 +84,9 @@ class BlokkCombinatorics:
             # to [ids, ...]
             yield frozenset(chain.from_iterable(play))
 
-    def generate_all_blokk_samples(self) -> Generator[tuple[int, frozenset[int]]]:
-        """
-        Yield all unique sets of blokk IDs whose volumes sum to cube_volume,
-        using only blokks with volume <= max_volume.
-        """
-
-        # loop through integer partitions
-        integer_partitions = mckay(self.cube_size**3)
-        for idx, integer_partition in enumerate(integer_partitions):
-            # loop through all possible ways to sample that partition
-            for blokk_sample in self.generate_blokk_samples_from_integer_partition(
-                integer_partition
-            ):
-                if blokk_sample is not None:
-                    yield (idx, blokk_sample)
-
     def generate_all_blokk_samples_by_partition(
         self, progress_bar=False
-    ) -> Generator[tuple[int, list[frozenset[int]]]]:
+    ) -> Generator[tuple[int, frozenset[int]]]:
         """
         Yield all unique sets of blokk IDs whose volumes sum to cube_volume,
         using only blokks with volume <= max_volume.
@@ -122,4 +107,4 @@ class BlokkCombinatorics:
             pbar.update(incr=integer_partition_number - pbar.position)
             for blokk_sample in blokk_samples:
                 if blokk_sample is not None:
-                    yield (integer_partition_number, list(blokk_samples))
+                    yield (integer_partition_number, blokk_sample)
