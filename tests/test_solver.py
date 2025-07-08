@@ -23,6 +23,6 @@ def test_trivial_cases(cube_size, max_blokk_volume, expected_number_of_solutions
 
 @pytest.mark.skip(reason="Too slow for a test")
 def test_solve_3x3x3():
-    solutions = solve_all_now(cube_size=3, max_blokk_volume=5)
+    solutions = solve_all_now(cube_size=3, max_blokk_volume=4)
     # ...
     # assert len(solutions) == 0  # ??

@@ -15,14 +15,15 @@ def solve_all_now(cube_size, max_blokk_volume=5):
         max_blokk_volume=max_blokk_volume, cube_size=cube_size
     )
     solutions = []
-    for (
-        integer_partition_number,
-        blokk_ids,
-    ) in combinatorics.generate_all_blokk_samples():
-        first_winning_build = solve(blokk_ids=set(blokk_ids)) or []
-        solutions.append(
-            [{"ids": blokk_ids, "first_winning_build": first_winning_build}]
-        )
+    for partition in combinatorics.generate_all_blokk_samples_by_partition():
+        for sample in partition["samples"]:
+            first_winning_build = solve(blokk_ids=sample) or []
+            solution = {
+                "idx": partition["idx"],
+                "ids": sample,
+                "first_winning_build": first_winning_build,
+            }
+            solutions.append([solution])
     return solutions
 
 
