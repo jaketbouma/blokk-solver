@@ -35,8 +35,13 @@ def test_trivial_all_blokk_samples_by_partition(
     combinatorics = BlokkCombinatorics(
         max_blokk_volume=max_blokk_volume, cube_size=cube_size
     )
-    samples = set(
-        [s for idx, s in combinatorics.generate_all_blokk_samples_by_partition()]
+
+    samples: set[frozenset[int]] = set(
+        [
+            sample
+            for partition_result in combinatorics.generate_all_blokk_samples_by_partition()
+            for sample in partition_result["samples"]
+        ]
     )
 
     # check the total volume of each sample is correct

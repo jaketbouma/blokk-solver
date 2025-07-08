@@ -12,10 +12,19 @@ logger = logging.getLogger(__name__)
 
 def test_sample_pipeline():
     db_path = "_test_databases/pytest.duckdb"
-    dataset_name = "cube3"
     if os.path.exists(db_path):
         os.remove(db_path)
         logger.info(f"Deleted existing database file: {db_path}")
+
+    dataset_name = "cube1"
+    sampling_pipeline.run_pipeline(
+        dataset_name=dataset_name,
+        cube_size=1,
+        max_blokk_volume=5,
+        database_name=db_path,
+    )
+
+    dataset_name = "cube3"
     sampling_pipeline.run_pipeline(
         dataset_name=dataset_name,
         cube_size=3,

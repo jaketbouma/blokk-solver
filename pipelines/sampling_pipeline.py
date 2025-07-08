@@ -1,6 +1,4 @@
-import itertools
 import logging
-from operator import itemgetter
 
 import dlt
 
@@ -25,14 +23,10 @@ def sample_generator(max_blokk_volume=None, cube_size=3):
     combinatorics = BlokkCombinatorics(
         max_blokk_volume=max_blokk_volume, cube_size=cube_size
     )
-    itertools.groupby(combinatorics.generate_all_blokk_samples(), key=itemgetter(0))
-    for sample_idx, (integer_partition_idx, blokk_ids) in enumerate(
-        combinatorics.generate_all_blokk_samples()
-    ):
+    for partition_samples in combinatorics.generate_all_blokk_samples_by_partition():
         sample = {
-            # "sample_idx": sample_idx,
-            "integer_partition_idx": integer_partition_idx,
-            "sample": sorted(blokk_ids),
+            "integer_partition_idx": partition_samples["idx"],
+            "sample": [sorted(s) for s in partition_samples["samples"]],
         }
         yield sample
 
@@ -58,12 +52,5 @@ def run_pipeline(
     pipeline.run(
         sample_generator(max_blokk_volume=max_blokk_volume, cube_size=cube_size)
     )
-
-    # Get the trace of the last run of the pipeline
-    # The trace contains timing information on extract, normalize, and load steps
-    trace = pipeline.last_trace
-
-    # Load the trace information into a table named "_trace" in the destination
-    pipeline.run([trace], table_name="_trace")
 
     return pipeline
